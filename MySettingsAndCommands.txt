@@ -1,0 +1,6 @@
+export OMP_NUM_THREADS=1
+export VECLIB_MAXIMUM_THREADS=1
+
+
+./bin/FaceLandmarkVid -f ~/Storage/OBS_Recordings/TopRight.mkv -f ~/Storage/OBS_Recordings/BottomRight.mkv -f ~/Storage/OBS_Recordings/BottomLeft.mkv -f ~/Storage/OBS_Recordings/TopLe
+ft.mkv > ../data.txt

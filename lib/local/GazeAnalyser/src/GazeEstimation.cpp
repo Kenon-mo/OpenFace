@@ -14,19 +14,19 @@
 //       reports and manuals, must cite at least one of the following works:
 //
 //       OpenFace 2.0: Facial Behavior Analysis Toolkit
-//       Tadas Baltrušaitis, Amir Zadeh, Yao Chong Lim, and Louis-Philippe Morency
+//       Tadas Baltruï¿½aitis, Amir Zadeh, Yao Chong Lim, and Louis-Philippe Morency
 //       in IEEE International Conference on Automatic Face and Gesture Recognition, 2018  
 //
 //       Convolutional experts constrained local model for facial landmark detection.
-//       A. Zadeh, T. Baltrušaitis, and Louis-Philippe Morency,
+//       A. Zadeh, T. Baltruï¿½aitis, and Louis-Philippe Morency,
 //       in Computer Vision and Pattern Recognition Workshops, 2017.    
 //
 //       Rendering of Eyes for Eye-Shape Registration and Gaze Estimation
-//       Erroll Wood, Tadas Baltrušaitis, Xucong Zhang, Yusuke Sugano, Peter Robinson, and Andreas Bulling 
+//       Erroll Wood, Tadas Baltruï¿½aitis, Xucong Zhang, Yusuke Sugano, Peter Robinson, and Andreas Bulling 
 //       in IEEE International. Conference on Computer Vision (ICCV),  2015 
 //
 //       Cross-dataset learning and person-specific normalisation for automatic Action Unit detection
-//       Tadas Baltrušaitis, Marwa Mahmoud, and Peter Robinson 
+//       Tadas Baltruï¿½aitis, Marwa Mahmoud, and Peter Robinson 
 //       in Facial Expression Recognition and Analysis Challenge, 
 //       IEEE International Conference on Automatic Face and Gesture Recognition, 2015 
 //
@@ -37,6 +37,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
 #include <iostream>
+#include <map>
 
 #include "GazeEstimation.h"
 
@@ -82,6 +83,34 @@ cv::Point3f GazeAnalysis::GetPupilPosition(cv::Mat_<float> eyeLdmks3d){
 
 	cv::Point3f p (mean(irisLdmks3d.col(0))[0], mean(irisLdmks3d.col(1))[0], mean(irisLdmks3d.col(2))[0]);
 	return p;
+}
+
+cv::Point2f GazeAnalysis::GetScreenXY(const LandmarkDetector::CLNF& clnf_model, cv::Point3f &gaze_vector_1, cv::Point3f &gaze_vector_2, const float fx, const float fy, const float cx, const float cy){
+	
+	float eyes_z = 0;
+	int part = -1;
+	for (size_t i = 0; i < clnf_model.hierarchical_models.size(); ++i)
+	{
+		if (clnf_model.hierarchical_model_names[i].compare("left_eye_28") == 0)
+		{
+			cv::Mat eyeLdmks3d = clnf_model.hierarchical_models[i].GetShape(fx, fy, cx, cy);
+			eyes_z += GetPupilPosition(eyeLdmks3d).z;
+		}
+		if (clnf_model.hierarchical_model_names[i].compare("right_eye_28") == 0)
+		{
+			cv::Mat eyeLdmks3d = clnf_model.hierarchical_models[i].GetShape(fx, fy, cx, cy);
+			eyes_z += GetPupilPosition(eyeLdmks3d).z;
+		}
+		
+	}
+
+	eyes_z /= 2;
+	cv::Point2f angles = GazeAnalysis::GetGazeAngle(gaze_vector_1, gaze_vector_2);
+	cv::Point2f cmXY = cv::Point2f(-eyes_z * sin(angles.x), eyes_z * sin(angles.y));
+	cv::Point3f xParams = cv::Point3f(1.3949e+01, -6.9613e+00, 2.0176e+03);
+	cv::Point3f yParams = cv::Point3f(3.2192e+00, 2.9878e+01, -3.1713e+03);
+
+	return cv::Point2f(xParams.x * cmXY.x + xParams.y * cmXY.y + xParams.z, yParams.x * cmXY.x + yParams.y * cmXY.y + yParams.z);
 }
 
 void GazeAnalysis::EstimateGaze(const LandmarkDetector::CLNF& clnf_model, cv::Point3f& gaze_absolute, float fx, float fy, float cx, float cy, bool left_eye)
