@@ -12,6 +12,8 @@ SET(HEADERS
     include/GazeEstimation.h
 )
 
+find_package(OpenCV REQUIRED)
+
 add_library( GazeAnalyser ${SOURCE} ${HEADERS})
 add_library( OpenFace::GazeAnalyser ALIAS GazeAnalyser)
 

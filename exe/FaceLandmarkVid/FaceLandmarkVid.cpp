@@ -37,6 +37,9 @@
 #include "LandmarkCoreIncludes.h"
 #include "GazeEstimation.h"
 
+#include "opencv2/core/cvdef.h"
+#include "opencv2/video/tracking.hpp"
+
 #include <SequenceCapture.h>
 #include <Visualizer.h>
 #include <VisualizationUtils.h>
@@ -111,6 +114,27 @@ int main(int argc, char **argv)
 
 	int sequence_number = 0;
 
+	// Kalman filters for angle tracking
+	cv::KalmanFilter kalmanX(2, 1, 0);
+	cv::KalmanFilter kalmanY(2, 1, 0);
+
+	cv::Mat stateX(2, 1, CV_32F); // x, delta_x
+	cv::Mat stateY(2, 1, CV_32F);
+
+	kalmanX.transitionMatrix = (cv::Mat_<float>(2, 2) << 1, 1, 0, 1);
+	cv::setIdentity(kalmanX.measurementMatrix);
+	cv::setIdentity(kalmanX.processNoiseCov, cv::Scalar::all(1e-5));
+	cv::setIdentity(kalmanX.measurementNoiseCov, cv::Scalar::all(1e-1));
+	cv::setIdentity(kalmanX.errorCovPost, cv::Scalar::all(1));
+	cv::randn(kalmanX.statePost, cv::Scalar::all(0), cv::Scalar::all(0));
+
+	kalmanY.transitionMatrix = (cv::Mat_<float>(2, 2) << 1, 1, 0, 1);
+	cv::setIdentity(kalmanY.measurementMatrix);
+	cv::setIdentity(kalmanY.processNoiseCov, cv::Scalar::all(1e-5));
+	cv::setIdentity(kalmanY.measurementNoiseCov, cv::Scalar::all(1e-1));
+	cv::setIdentity(kalmanY.errorCovPost, cv::Scalar::all(1));
+	cv::randn(kalmanY.statePost, cv::Scalar::all(0), cv::Scalar::all(0));
+
 	while (true) // this is not a for loop as we might also be reading from a webcam
 	{
 
@@ -142,7 +166,7 @@ int main(int argc, char **argv)
 			{
 				GazeAnalysis::EstimateGaze(face_model, gazeDirection0, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy, true);
 				GazeAnalysis::EstimateGaze(face_model, gazeDirection1, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy, false);
-				points.emplace_back(GazeAnalysis::GetScreenXY(face_model, gazeDirection0, gazeDirection1, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy));
+				points.emplace_back(GazeAnalysis::GetScreenCM(kalmanX, stateX, kalmanY, stateY, face_model, gazeDirection0, gazeDirection1, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy));
 			}
 
 			// Work out the pose of the head from the tracked model
