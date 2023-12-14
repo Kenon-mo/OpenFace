@@ -115,30 +115,18 @@ int main(int argc, char **argv)
 	int sequence_number = 0;
 
 	// Kalman filters for angle tracking
-	cv::KalmanFilter kalmanX(3, 1, 0);
-	cv::KalmanFilter kalmanY(4, 1, 0);
+	cv::KalmanFilter kalman(4, 2, 0);
+	cv::Mat state(4, 1, CV_32F); // x, delta_x
+	kalman.transitionMatrix = (cv::Mat_<float>(4, 4) << 0, 1, 0, 0,
+														0, 0, 1, 0,
+														0, 0, 0, 1,
+														0, 0, 0, 1);
 
-	cv::Mat stateX(3, 1, CV_32F); // x, delta_x
-	cv::Mat stateY(4, 1, CV_32F);
-	kalmanX.transitionMatrix = (cv::Mat_<float>(3, 3) << 0, 1, 0,
-														 0, 0, 1,
-														 0, 0, 1);
-
-	cv::setIdentity(kalmanX.measurementMatrix);
-	cv::setIdentity(kalmanX.processNoiseCov, cv::Scalar::all(1e-5));
-	cv::setIdentity(kalmanX.measurementNoiseCov, cv::Scalar::all(1e-1));
-	cv::setIdentity(kalmanX.errorCovPost, cv::Scalar::all(1));
-	cv::randn(kalmanX.statePost, cv::Scalar::all(0), cv::Scalar::all(0));
-
-	kalmanY.transitionMatrix = (cv::Mat_<float>(4, 4) << 1, 0, 1, 0,
-														 0, 1, 0, 1,
-														 0, 0, 1, 0,
-														 0, 0, 0, 1 );
-	cv::setIdentity(kalmanY.measurementMatrix);
-	cv::setIdentity(kalmanY.processNoiseCov, cv::Scalar::all(1e-3));
-	cv::setIdentity(kalmanY.measurementNoiseCov, cv::Scalar::all(1e-2));
-	cv::setIdentity(kalmanY.errorCovPost, cv::Scalar::all(1));
-	cv::randn(kalmanY.statePost, cv::Scalar::all(0), cv::Scalar::all(0));
+	cv::setIdentity(kalman.measurementMatrix);
+	cv::setIdentity(kalman.processNoiseCov, cv::Scalar::all(1e-5));
+	cv::setIdentity(kalman.measurementNoiseCov, cv::Scalar::all(1e-1));
+	cv::setIdentity(kalman.errorCovPost, cv::Scalar::all(1));
+	cv::randn(kalman.statePost, cv::Scalar::all(0), cv::Scalar::all(0));
 
 	while (true) // this is not a for loop as we might also be reading from a webcam
 	{
@@ -171,7 +159,12 @@ int main(int argc, char **argv)
 			{
 				GazeAnalysis::EstimateGaze(face_model, gazeDirection0, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy, true);
 				GazeAnalysis::EstimateGaze(face_model, gazeDirection1, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy, false);
-				points.emplace_back(GazeAnalysis::GetScreenCM(kalmanX, stateX, kalmanY, stateY, face_model, gazeDirection0, gazeDirection1, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy));
+				if (points.empty())
+				{
+					std::cout << "NoFilter x, NoFilter y, Kalman x, Kalman y \n";
+				}
+				
+				points.emplace_back(GazeAnalysis::GetScreenCM(kalman, state, face_model, gazeDirection0, gazeDirection1, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy));
 			}
 
 			// Work out the pose of the head from the tracked model

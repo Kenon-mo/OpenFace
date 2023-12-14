@@ -51,7 +51,7 @@ namespace GazeAnalysis
 	// Some utilities
 	cv::Point3f GetPupilPosition(cv::Mat_<float> eyeLdmks3d);
 	cv::Point2f GetScreenXY(cv::KalmanFilter &kalmanX, cv::Mat &stateX, cv::KalmanFilter &kalmanY, cv::Mat &stateY, const LandmarkDetector::CLNF& clnf_model, cv::Point3f &gaze_vector_1, cv::Point3f &gaze_vector_2, const float fx, const float fy, const float cx, const float cy);
-	cv::Point2f GetScreenCM(cv::KalmanFilter &kalmanX, cv::Mat &stateX, cv::KalmanFilter &kalmanY, cv::Mat &stateY, const LandmarkDetector::CLNF& clnf_model, cv::Point3f &gaze_vector_1, cv::Point3f &gaze_vector_2, const float fx, const float fy, const float cx, const float cy);
+	cv::Point2f GetScreenCM(cv::KalmanFilter &kalman, cv::Mat &state, const LandmarkDetector::CLNF& clnf_model, cv::Point3f &gaze_vector_1, cv::Point3f &gaze_vector_2, const float fx, const float fy, const float cx, const float cy);
 
 }
 #endif // GAZE_ESTIMATION_H
