@@ -110,7 +110,7 @@ cv::Point2f GazeAnalysis::GetScreenCM(cv::KalmanFilter &kalmanX, cv::Mat &stateX
 		measurementX.at<float>(0) = angles.x;
 		measurementY.at<float>(0) = angles.y;
 
-		// Kalman filter here for angles
+		// // Kalman filter here for angles
 		cv::Mat predictX = kalmanX.predict();
 		cv::Mat predictY = kalmanY.predict();
 
@@ -120,11 +120,13 @@ cv::Point2f GazeAnalysis::GetScreenCM(cv::KalmanFilter &kalmanX, cv::Mat &stateX
 		kalmanX.correct(measurementX);
 		kalmanY.correct(measurementY);
 
-		cv::Mat processNoise(2, 1, CV_32F);
-		randn( processNoise, cv::Scalar(0), cv::Scalar::all(sqrt(kalmanX.processNoiseCov.at<float>(0, 0))));
+		cv::Mat processNoiseX(3, 1, CV_32F);
+		cv::Mat processNoiseY(4, 1, CV_32F);
+		randn( processNoiseX, cv::Scalar(0), cv::Scalar::all(sqrt(kalmanX.processNoiseCov.at<float>(0, 0))));
+		randn( processNoiseY, cv::Scalar(0), cv::Scalar::all(sqrt(kalmanY.processNoiseCov.at<float>(0, 0))));
 
-		stateX = kalmanX.transitionMatrix * stateX + processNoise;
-		stateY = kalmanY.transitionMatrix * stateY + processNoise;
+		stateX = kalmanX.transitionMatrix * stateX + processNoiseX;
+		stateY = kalmanY.transitionMatrix * stateY + processNoiseY;
 
 		angles.x = kalmanX.statePost.at<float>(0);
 		angles.y = kalmanY.statePost.at<float>(0);

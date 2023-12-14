@@ -115,23 +115,28 @@ int main(int argc, char **argv)
 	int sequence_number = 0;
 
 	// Kalman filters for angle tracking
-	cv::KalmanFilter kalmanX(2, 1, 0);
-	cv::KalmanFilter kalmanY(2, 1, 0);
+	cv::KalmanFilter kalmanX(3, 1, 0);
+	cv::KalmanFilter kalmanY(4, 1, 0);
 
-	cv::Mat stateX(2, 1, CV_32F); // x, delta_x
-	cv::Mat stateY(2, 1, CV_32F);
+	cv::Mat stateX(3, 1, CV_32F); // x, delta_x
+	cv::Mat stateY(4, 1, CV_32F);
+	kalmanX.transitionMatrix = (cv::Mat_<float>(3, 3) << 0, 1, 0,
+														 0, 0, 1,
+														 0, 0, 1);
 
-	kalmanX.transitionMatrix = (cv::Mat_<float>(2, 2) << 1, 1, 0, 1);
 	cv::setIdentity(kalmanX.measurementMatrix);
 	cv::setIdentity(kalmanX.processNoiseCov, cv::Scalar::all(1e-5));
 	cv::setIdentity(kalmanX.measurementNoiseCov, cv::Scalar::all(1e-1));
 	cv::setIdentity(kalmanX.errorCovPost, cv::Scalar::all(1));
 	cv::randn(kalmanX.statePost, cv::Scalar::all(0), cv::Scalar::all(0));
 
-	kalmanY.transitionMatrix = (cv::Mat_<float>(2, 2) << 1, 1, 0, 1);
+	kalmanY.transitionMatrix = (cv::Mat_<float>(4, 4) << 1, 0, 1, 0,
+														 0, 1, 0, 1,
+														 0, 0, 1, 0,
+														 0, 0, 0, 1 );
 	cv::setIdentity(kalmanY.measurementMatrix);
-	cv::setIdentity(kalmanY.processNoiseCov, cv::Scalar::all(1e-5));
-	cv::setIdentity(kalmanY.measurementNoiseCov, cv::Scalar::all(1e-1));
+	cv::setIdentity(kalmanY.processNoiseCov, cv::Scalar::all(1e-3));
+	cv::setIdentity(kalmanY.measurementNoiseCov, cv::Scalar::all(1e-2));
 	cv::setIdentity(kalmanY.errorCovPost, cv::Scalar::all(1));
 	cv::randn(kalmanY.statePost, cv::Scalar::all(0), cv::Scalar::all(0));
 
