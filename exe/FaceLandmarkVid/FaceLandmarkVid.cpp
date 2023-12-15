@@ -116,17 +116,18 @@ int main(int argc, char **argv)
 
 	// Kalman filters for angle tracking
 	cv::KalmanFilter kalman(4, 2, 0);
-	cv::Mat state(4, 1, CV_32F); // x, delta_x
-	kalman.transitionMatrix = (cv::Mat_<float>(4, 4) << 0, 1, 0, 0,
+	cv::Mat state(4, 1, CV_32F); // x, dx, y ,dy
+	kalman.transitionMatrix = (cv::Mat_<float>(4, 4) << 1, 0, 1, 0,
+														0, 1, 0, 1, 
 														0, 0, 1, 0,
-														0, 0, 0, 1,
 														0, 0, 0, 1);
 
 	cv::setIdentity(kalman.measurementMatrix);
 	cv::setIdentity(kalman.processNoiseCov, cv::Scalar::all(1e-5));
 	cv::setIdentity(kalman.measurementNoiseCov, cv::Scalar::all(1e-1));
-	cv::setIdentity(kalman.errorCovPost, cv::Scalar::all(1));
-	cv::randn(kalman.statePost, cv::Scalar::all(0), cv::Scalar::all(0));
+	cv::setIdentity(kalman.errorCovPost, cv::Scalar::all(0));
+	cv::randn(kalman.statePost, cv::Scalar::all(0), cv::Scalar::all(0.1));
+	randn(state, cv::Scalar::all(0), cv::Scalar::all(0.1));
 
 	while (true) // this is not a for loop as we might also be reading from a webcam
 	{
