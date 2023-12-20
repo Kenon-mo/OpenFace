@@ -9,5 +9,6 @@ target_link_libraries(FaceLandmarkVid FaceAnalyser)
 target_link_libraries(FaceLandmarkVid GazeAnalyser)
 target_link_libraries(FaceLandmarkVid Utilities)
 target_link_libraries(FaceLandmarkVid ${OpenCV_LIBS})
+target_link_libraries(FaceLandmarkVid commClient)
 
 install (TARGETS FaceLandmarkVid DESTINATION bin)

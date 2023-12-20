@@ -34,11 +34,16 @@
 // FaceTrackingVid.cpp : Defines the entry point for the console application for tracking faces in videos.
 
 // Libraries for landmark detection (includes CLNF and CLM modules)
+#include <chrono>
+#include <thread>
+
 #include "LandmarkCoreIncludes.h"
 #include "GazeEstimation.h"
 
 #include "opencv2/core/cvdef.h"
 #include "opencv2/video/tracking.hpp"
+
+#include <CommClient.hxx>
 
 #include <SequenceCapture.h>
 #include <Visualizer.h>
@@ -114,20 +119,11 @@ int main(int argc, char **argv)
 
 	int sequence_number = 0;
 
-	// Kalman filters for angle tracking
-	cv::KalmanFilter kalman(4, 2, 0);
-	cv::Mat state(4, 1, CV_32F); // x, dx, y ,dy
-	kalman.transitionMatrix = (cv::Mat_<float>(4, 4) << 1, 0, 1, 0,
-														0, 1, 0, 1, 
-														0, 0, 1, 0,
-														0, 0, 0, 1);
+	CommClient debug_client(2138, "127.0.0.1");
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+	CommClient client(2137, "127.0.0.1");
 
-	cv::setIdentity(kalman.measurementMatrix);
-	cv::setIdentity(kalman.processNoiseCov, cv::Scalar::all(1e-5));
-	cv::setIdentity(kalman.measurementNoiseCov, cv::Scalar::all(1e-1));
-	cv::setIdentity(kalman.errorCovPost, cv::Scalar::all(0));
-	cv::randn(kalman.statePost, cv::Scalar::all(0), cv::Scalar::all(0.1));
-	randn(state, cv::Scalar::all(0), cv::Scalar::all(0.1));
+	client.sendMessage("Client Connected!");
 
 	while (true) // this is not a for loop as we might also be reading from a webcam
 	{
@@ -139,7 +135,7 @@ int main(int argc, char **argv)
 		INFO_STREAM("Device or file opened");
 
 		cv::Mat rgb_image = sequence_reader.GetNextFrame();
-		std::vector<cv::Point2f> points;
+		cv::Point3f gaze_vector;
 
 		INFO_STREAM("Starting tracking");
 		while (!rgb_image.empty()) // this is not a for loop as we might also be reading from a webcam
@@ -160,12 +156,8 @@ int main(int argc, char **argv)
 			{
 				GazeAnalysis::EstimateGaze(face_model, gazeDirection0, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy, true);
 				GazeAnalysis::EstimateGaze(face_model, gazeDirection1, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy, false);
-				if (points.empty())
-				{
-					std::cout << "NoFilter x, NoFilter y, Kalman x, Kalman y \n";
-				}
-				
-				points.emplace_back(GazeAnalysis::GetScreenCM(kalman, state, face_model, gazeDirection0, gazeDirection1, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy));
+				gaze_vector = GazeAnalysis::GetXYZVector(face_model, gazeDirection0, gazeDirection1, sequence_reader.fx, sequence_reader.fy, sequence_reader.cx, sequence_reader.cy);
+				client.sendMessage("{x="+std::to_string(gaze_vector.x)+",y="+std::to_string(gaze_vector.y)+",z="+std::to_string(gaze_vector.z)+"}");
 			}
 
 			// Work out the pose of the head from the tracked model
@@ -198,15 +190,6 @@ int main(int argc, char **argv)
 			rgb_image = sequence_reader.GetNextFrame();
 
 		}
-		cv::Point2f avg_point;
-		for (auto &&point : points)
-		{
-			avg_point += point;
-		}
-		avg_point.x /= points.size();
-		avg_point.y /= points.size();
-
-		std::cout << sequence_reader.name << " avg position = " << avg_point << std::endl;
 		
 		// Reset the model, for the next video
 		face_model.Reset();

@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.8)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 project(OpenFace VERSION 2.0.2)
 
@@ -162,6 +162,8 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" ST
     add_compile_options("-Wno-deprecated-declarations")
 endif()
 
+# commClient library
+add_subdirectory(lib/local/commClient)
 # LandmarkDetector library
 add_subdirectory(lib/local/LandmarkDetector)
 # Facial Expression analysis library
@@ -185,7 +187,7 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL "${CMAKE_SOURCE_DIR}")
 
     set(LIB_INSTALL_DIR lib)
     set(CONFIG_DEST_DIR ${LIB_INSTALL_DIR}/cmake/OpenFace/)
-    set(OpenFace_LIBRARIES OpenFace::GazeAnalyser OpenFace::FaceAnalyser OpenFace::LandmarkDetector OpenFace::Utilities)
+    set(OpenFace_LIBRARIES OpenFace::GazeAnalyser OpenFace::FaceAnalyser OpenFace::LandmarkDetector OpenFace::Utilities OpenFace::commClient)
 
     # export targets [build tree]
     export(EXPORT OpenFaceTargets

@@ -87,7 +87,7 @@ cv::Point3f GazeAnalysis::GetPupilPosition(cv::Mat_<float> eyeLdmks3d){
 	return p;
 }
 
-cv::Point2f GazeAnalysis::GetScreenCM(cv::KalmanFilter &kalman, cv::Mat &state, const LandmarkDetector::CLNF& clnf_model, cv::Point3f &gaze_vector_1, cv::Point3f &gaze_vector_2, const float fx, const float fy, const float cx, const float cy) {
+cv::Point3f GazeAnalysis::GetXYZVector(const LandmarkDetector::CLNF& clnf_model, cv::Point3f &gaze_vector_1, cv::Point3f &gaze_vector_2, const float fx, const float fy, const float cx, const float cy) {
 	float eyes_z = 0;
 	int part = -1;
 	for (size_t i = 0; i < clnf_model.hierarchical_models.size(); ++i)
@@ -105,53 +105,9 @@ cv::Point2f GazeAnalysis::GetScreenCM(cv::KalmanFilter &kalman, cv::Mat &state, 
 	}
 		eyes_z /= 2;
 		cv::Point2f angles = GazeAnalysis::GetGazeAngle(gaze_vector_1, gaze_vector_2);
-		cv::Mat measurements = cv::Mat::zeros(2, 1, CV_32F);
-		measurements.at<float>(0) = angles.x;
-		measurements.at<float>(1) = angles.y;
-
-		// // Kalman filter here for angles
-		cv::Mat predictX = kalman.predict();
-
-		measurements += kalman.measurementMatrix * state;
-
-		kalman.correct(measurements);
-
-		cv::Mat processNoiseX(4, 1, CV_32F);
-		randn( processNoiseX, cv::Scalar(0), cv::Scalar::all(sqrt(kalman.processNoiseCov.at<float>(0, 0))));
-
-		state = kalman.transitionMatrix * state + processNoiseX;
-
-		std::cout << -eyes_z * sin(angles.x) << ", " << eyes_z * sin(angles.y) << ", ";
-
-		angles.x = kalman.statePost.at<float>(0);
-		angles.y = kalman.statePost.at<float>(2);
-
-		cv::Point2f cmXY = cv::Point2f(-eyes_z * sin(angles.x), eyes_z * sin(angles.y));
-		std::cout << cmXY.x << ", " << cmXY.y << '\n';
-		return cmXY;
+		
+		return cv::Point3f(angles.x, angles.y, eyes_z);
 }
-
-// cv::Point2f GazeAnalysis::GetScreenXY(cv::KalmanFilter &kalmanX, cv::Mat &stateX, cv::KalmanFilter &kalmanY, cv::Mat &stateY, const LandmarkDetector::CLNF& clnf_model, cv::Point3f &gaze_vector_1, cv::Point3f &gaze_vector_2, const float fx, const float fy, const float cx, const float cy) {
-
-// 	// cv::Point2f cmXY = GetScreenCM(kalmanX, stateX, kalmanY, stateY, clnf_model, gaze_vector_1, gaze_vector_2, fx, fy, cx, cy);
-// 	//Try 1 11.12 
-// 	// cv::Point3f xParams = cv::Point3f(1.3949e+01, -6.9613e+00, 2.0176e+03);
-// 	// cv::Point3f yParams = cv::Point3f(3.2192e+00, 2.9878e+01, -3.1713e+03);
-// 	//Try 1 12.12
-// 	// cv::Point3f xParams = cv::Point3f(1.0490e+01, 6.7009e-01, 1.1856e+03);
-// 	// cv::Point3f yParams = cv::Point3f(1.5379e-01, 1.6672e+0, -1.5963e+03);
-// 	//Try 2 12.12
-// 	// cv::Point3f xParams = cv::Point3f(14.601, -10.337, 2890.749);
-// 	// cv::Point3f yParams = cv::Point3f(4.6034e+00, 3.0206e+01, -3.5108e+03);
-// 	//Try 3 12.12
-// 	// cv::Point3f xParams = cv::Point3f(96.159, -79.688, 3140.029);
-// 	// cv::Point3f yParams = cv::Point3f(15.492, 153.836, -2609.534);
-// 	//Try 4 12.12
-// 	// cv::Point3f xParams = cv::Point3f(17.411, 11.501, -281.093);
-// 	// cv::Point3f yParams = cv::Point3f(6.7504e+00, 3.4972e+01, -3.0045e+03);
-
-// 	// return cv::Point2f(xParams.x * cmXY.x + xParams.y * cmXY.y + xParams.z, yParams.x * cmXY.x + yParams.y * cmXY.y + yParams.z);
-// }
 
 void GazeAnalysis::EstimateGaze(const LandmarkDetector::CLNF& clnf_model, cv::Point3f& gaze_absolute, float fx, float fy, float cx, float cy, bool left_eye)
 {
